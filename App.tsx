@@ -1,118 +1,104 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, {useState, useCallback} from 'react';
+import {View, Text, Button, Platform, PermissionsAndroid} from 'react-native';
+import BLEAdvertiser from 'react-native-ble-advertiser';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const App: React.FC = () => {
+  const [isAdvertising, setIsAdvertising] = useState<boolean>(false);
+  const [currentUUID, setCurrentUUID] = useState<string>('');
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+  const requestPermissions = useCallback(async (): Promise<boolean> => {
+    if (Platform.OS === 'android') {
+      if (Platform.Version >= 31) {
+        // Android 12 and above
+        const results = await Promise.all([
+          PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+          ),
+          PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          ),
+          PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          ),
+        ]);
+        return results.every(
+          result => result === PermissionsAndroid.RESULTS.GRANTED,
+        );
+      } else {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
+    }
+    return true;
+  }, []);
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+  const startAdvertising = useCallback(async (): Promise<void> => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) {
+      console.log('Permission denied');
+      return;
+    }
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+    // UUID for our hypothetical contact tracing service
+    const UUID = 'C19CE516-0000-1000-8000-00805F9B34FB';
+    setCurrentUUID(UUID);
+    // Manufacturer data
+    const MANUFACTURER_DATA: number[] = [
+      0x02, // Protocol version (version 2)
+      0xc1,
+      0x9a, // Short identifier for our app (16-bit)
+      0x3f, // Transmit power level (63 in decimal, used for distance estimation)
+      0x12,
+      0x34,
+      0x56,
+      0x78, // First part of rotating identifier (changes periodically)
+      0x9a,
+      0xbc,
+      0xde,
+      0xf0, // Second part of rotating identifier
+    ];
+
+    BLEAdvertiser.setCompanyId(0x00e0); // Googles's company ID as an example
+
+    try {
+      await BLEAdvertiser.broadcast(UUID, MANUFACTURER_DATA, {});
+      setIsAdvertising(true);
+      console.log('Broadcasting started successfully,', 'UUID:', UUID);
+      console.log();
+    } catch (error) {
+      console.log('Broadcasting error', error);
+    }
+  }, [requestPermissions]);
+
+  const stopAdvertising = useCallback(async (): Promise<void> => {
+    try {
+      await BLEAdvertiser.stopBroadcast();
+      setIsAdvertising(false);
+      console.log('Broadcasting stopped successfully');
+    } catch (error) {
+      console.log('Stop broadcasting error', error);
+    }
+  }, []);
+
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
+    // eslint-disable-next-line react-native/no-inline-styles
+    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <Text>BLE Advertiser Demo </Text>
+      <Button
+        title={isAdvertising ? 'Stop Advertising' : 'Start Advertising'}
+        onPress={isAdvertising ? stopAdvertising : startAdvertising}
+      />
+      {currentUUID !== '' && (
+        // eslint-disable-next-line react-native/no-inline-styles
+        <Text style={{marginTop: 20}}>
+          <Text>UUID: </Text>
+          <Text>{currentUUID}</Text>
+        </Text>
+      )}
     </View>
   );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+};
 
 export default App;
