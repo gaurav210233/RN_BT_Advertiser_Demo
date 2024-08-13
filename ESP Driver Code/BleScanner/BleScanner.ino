@@ -11,7 +11,7 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
             String manufacturerData = advertisedDevice.getManufacturerData();
             
             // Check if the manufacturer data matches our expected format
-            if (manufacturerData.length() == 14 && manufacturerData[0] == 0xE0 && manufacturerData[1] == 0x00) {
+            if (manufacturerData.length() == 14 && manufacturerData[0] == 0xE0 && manufacturerData[1] == 0x00) { // As my code has 2(Company identifier)[0-1] + 12(Manufacturer data)[2-13] // Checking company identifier (I used google here)
                 // Extract and print UUID
                 if (advertisedDevice.haveServiceUUID()) {
                     BLEUUID deviceUUID = advertisedDevice.getServiceUUID();
@@ -24,7 +24,7 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
                 Serial.print("  Protocol Version: ");
                 Serial.println(manufacturerData[2], HEX);
                 
-                uint16_t appIdentifier = (manufacturerData[3] << 8) | manufacturerData[4];
+                uint16_t appIdentifier = (manufacturerData[3] << 8) | manufacturerData[4]; // extracting a 16-bit application identifier value from the manufacturer data payload of the BLE advertisement.
                 Serial.print("  App Identifier: 0x");
                 Serial.println(appIdentifier, HEX);
                 
