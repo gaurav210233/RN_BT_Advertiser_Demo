@@ -75,6 +75,9 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.bleadvertiserdemo"
+    lint {
+          baseline = file("lint-baseline.xml")
+      }
     defaultConfig {
         applicationId "com.bleadvertiserdemo"
         minSdkVersion rootProject.ext.minSdkVersion
