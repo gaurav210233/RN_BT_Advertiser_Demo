@@ -1,19 +1,32 @@
-import {PermissionsAndroid, Platform} from 'react-native';
+// permissions.ts
+import {Platform, PermissionsAndroid} from 'react-native';
 
-export const requestPermissions = async () => {
-  if (Platform.OS === 'android' && Platform.Version >= 23) {
-    try {
-      await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+export const requestPermissions = async (): Promise<boolean> => {
+  if (Platform.OS === 'android') {
+    if (Platform.Version >= 31) {
+      // Android 12 and above
+      const results = await Promise.all([
+        PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+        ),
+        PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        ),
+        PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        ),
       ]);
-      console.log('Permissions requested');
-    } catch (error) {
-      console.error('Error requesting permissions:', error);
+      return results.every(
+        result => result === PermissionsAndroid.RESULTS.GRANTED,
+      );
+    } else {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
   }
+  return true;
 };
 
 export const requestNotificationPermission = async () => {

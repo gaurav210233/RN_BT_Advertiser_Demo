@@ -58,6 +58,9 @@ export const useDiscountData = () => {
           return newOffers;
         });
         triggerNotification(data.discount_offer);
+        console.log('====================================');
+        console.log(data.discount_offer);
+        console.log('====================================');
       };
 
       newSocket.onerror = error => {

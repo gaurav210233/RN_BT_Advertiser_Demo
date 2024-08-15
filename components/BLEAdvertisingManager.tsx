@@ -1,7 +1,7 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {Switch, Text, View} from 'react-native';
 import {colors, styles} from '../styles/styles';
-import {startAdvertising, stopAdvertising} from '../utils/bleUtils';
+import {useAdvertising} from '../utils/bleUtils';
 
 interface BLEAdvertisingManagerProps {
   statusMessage: string;
@@ -16,22 +16,18 @@ export const BLEAdvertisingManager: React.FC<BLEAdvertisingManagerProps> = ({
   connectWebSocket,
   disconnectWebSocket,
 }) => {
-  const [isEnabled, setIsEnabled] = useState(false);
+  const {isAdvertising, startAdvertising, stopAdvertising} = useAdvertising();
 
   const toggleSwitch = async () => {
-    const newState = !isEnabled;
-    setIsEnabled(newState);
-
-    if (newState) {
+    if (!isAdvertising) {
       try {
         await startAdvertising();
         setStatusMessage('Start Roaming Around the Store.');
+        connectWebSocket();
       } catch (error) {
         console.error('Error starting advertising:', error);
         setStatusMessage(`Error: ${error}`);
-        setIsEnabled(false);
       }
-      connectWebSocket();
     } else {
       disconnectWebSocket();
       try {
@@ -40,7 +36,6 @@ export const BLEAdvertisingManager: React.FC<BLEAdvertisingManagerProps> = ({
       } catch (error) {
         console.error('Error stopping advertising:', error);
         setStatusMessage(`Error: ${error}`);
-        setIsEnabled(true);
       }
     }
   };
@@ -57,7 +52,7 @@ export const BLEAdvertisingManager: React.FC<BLEAdvertisingManagerProps> = ({
             transform: [{scaleX: 3}, {scaleY: 3}],
             marginBottom: 50,
           }}
-          value={isEnabled}
+          value={isAdvertising}
         />
         <Text
           style={[

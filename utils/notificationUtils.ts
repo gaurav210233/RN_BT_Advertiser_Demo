@@ -2,7 +2,8 @@ import PushNotification from 'react-native-push-notification';
 import {Platform} from 'react-native';
 import {requestNotificationPermission} from './permissionUtils';
 
-export const setupNotifications = () => {
+export const setupNotifications = async () => {
+  await requestNotificationPermission();
   PushNotification.configure({
     onNotification: function (notification) {
       console.log('Notification:', notification);
@@ -18,8 +19,6 @@ export const setupNotifications = () => {
     },
     created => console.log(`CreateChannel returned '${created}'`),
   );
-
-  requestNotificationPermission();
 };
 
 export const triggerNotification = (message: string) => {
